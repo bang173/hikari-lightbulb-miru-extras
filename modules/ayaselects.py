@@ -2,18 +2,19 @@ import typing
 import hikari
 import miru
 
-
+# оберточный класс для miru.SelectOption
 class SelectRoleOption(miru.SelectOption):
 
     def __init__(self, linked_role_id: hikari.Snowflake | int, mirror_role_ids: typing.Sequence[hikari.Snowflake], **kwargs):
-        self._role_id: hikari.Snowflake = linked_role_id
-        self._mirror_role_ids: typing.Sequence[hikari.Snowflake] = mirror_role_ids
+        self._role_id: hikari.Snowflake = linked_role_id # роль которую добавить
+        self._mirror_role_ids: typing.Sequence[hikari.Snowflake] = mirror_role_ids # роли которые убирать при добавлении (может быть пустым, если не надо убирать)
         super().__init__(**kwargs)
 
     def __repr__(self) -> str:
         return f'SelectRoleOption(role_id={self._role_id}, mirror_role_ids={self._mirror_role_ids}, '\
                f'label={self.label}, value={self.value}'
 
+    # метод для выдачи выбранной роли и удаления ненужных (если таковые имеются)
     async def manage_linked_role(self, interaction: miru.Interaction) -> typing.Tuple[bool, hikari.Role]:
         if self._mirror_role_ids:
             for mr_id in self._mirror_role_ids:
@@ -25,7 +26,7 @@ class SelectRoleOption(miru.SelectOption):
         else:
             await interaction.member.remove_role(self._role_id)
 
-
+# оберточный класс для miru.View
 class SelectRolesMenu(miru.View):
 
     options: typing.Sequence[SelectRoleOption]
@@ -33,6 +34,7 @@ class SelectRolesMenu(miru.View):
     def __init__(self):
         super().__init__(timeout=None)
 
+    # метод для нахождения опции и вызова управления ею
     async def select_roles_menu(self, select: miru.Select, ctx: miru.Context):
 
         for v in ctx.interaction.values:
@@ -47,6 +49,7 @@ class SelectRolesMenu(miru.View):
             flags=hikari.MessageFlag.EPHEMERAL
         )
 
+# вспомогательная функция, которую можно использовать в случаях, когда опций слишком много
 def make_options_collection(*label_values: typing.Tuple[int, str, str]) -> typing.List[SelectRoleOption]:
     role_ids: typing.List[hikari.Snowflake] = [lv[0] for lv in label_values]
     res: typing.List[SelectRoleOption] = []
